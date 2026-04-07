@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import search from "@inquirer/search";
-import confirm from "@inquirer/confirm";
+import select from "@inquirer/select";
 import { scanSessionFiles } from "./scanner.js";
 import { parseSessionFull } from "./parser.js";
 import { loadCache, saveCache, isCacheHit } from "./cache.js";
@@ -117,21 +117,35 @@ async function main() {
     const selected = sessions.find((s) => s.sessionId === sessionId)!;
 
     if (selected.isActive) {
-      const DIM = "\x1b[2m";
       const YELLOW = "\x1b[33m";
+      const DIM = "\x1b[2m";
       const RESET = "\x1b[0m";
       console.log(
         `\n${YELLOW}This session is active in another terminal.${RESET}`
       );
-      console.log(
-        `${DIM}Forking creates a new branch of the conversation without affecting the original.${RESET}\n`
-      );
-      const fork = await confirm({
-        message: "Fork this session?",
-        default: true,
+
+      const action = await select({
+        message: "What do you want to do?",
+        choices: [
+          {
+            name: "Take over",
+            value: "takeover" as const,
+            description: `${DIM}Resume the session here (the other terminal will lose it)${RESET}`,
+          },
+          {
+            name: "Fork",
+            value: "fork" as const,
+            description: `${DIM}Branch off a new conversation from the current state${RESET}`,
+          },
+          {
+            name: "Cancel",
+            value: "cancel" as const,
+          },
+        ],
       });
-      if (!fork) process.exit(0);
-      await resumeSession(sessionId, selected.cwd, true);
+
+      if (action === "cancel") process.exit(0);
+      await resumeSession(sessionId, selected.cwd, action === "fork");
     } else {
       await resumeSession(sessionId, selected.cwd);
     }

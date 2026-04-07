@@ -9,6 +9,7 @@ export interface SessionMeta {
   lastTimestamp: string;
   firstUserMessage: string;
   model: string | null;
+  entrypoint: string | null;
   messageCount: number;
   totalInputTokens: number;
   totalOutputTokens: number;

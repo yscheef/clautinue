@@ -21,12 +21,14 @@ function extractFromHead(records: unknown[]): {
   sessionId: string | null;
   cwd: string | null;
   slug: string | null;
+  entrypoint: string | null;
   firstTimestamp: string | null;
   firstUserMessage: string;
 } {
   let sessionId: string | null = null;
   let cwd: string | null = null;
   let slug: string | null = null;
+  let entrypoint: string | null = null;
   let firstTimestamp: string | null = null;
   let firstUserMessage = "";
 
@@ -40,6 +42,7 @@ function extractFromHead(records: unknown[]): {
     if (r.type === "user") {
       if (!cwd && r.cwd) cwd = r.cwd as string;
       if (!slug && r.slug) slug = r.slug as string;
+      if (!entrypoint && r.entrypoint) entrypoint = r.entrypoint as string;
       if (!firstTimestamp && r.timestamp) firstTimestamp = r.timestamp as string;
 
       if (!firstUserMessage) {
@@ -64,7 +67,7 @@ function extractFromHead(records: unknown[]): {
     }
   }
 
-  return { sessionId, cwd, slug, firstTimestamp, firstUserMessage };
+  return { sessionId, cwd, slug, entrypoint, firstTimestamp, firstUserMessage };
 }
 
 function extractFromTail(records: unknown[]): {
@@ -135,6 +138,7 @@ export async function parseSessionQuick(
     lastTimestamp: tail.lastTimestamp ?? head.firstTimestamp,
     firstUserMessage: head.firstUserMessage,
     model: tail.model,
+    entrypoint: head.entrypoint,
     messageCount: 0,
     totalInputTokens: 0,
     totalOutputTokens: 0,
@@ -192,6 +196,7 @@ export async function parseSessionFull(
     lastTimestamp: tail.lastTimestamp ?? head.firstTimestamp,
     firstUserMessage: head.firstUserMessage,
     model: tail.model,
+    entrypoint: head.entrypoint,
     messageCount,
     totalInputTokens,
     totalOutputTokens,

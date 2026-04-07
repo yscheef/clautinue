@@ -4,6 +4,15 @@ import type { ActiveSession } from "./types.js";
 
 const SESSIONS_DIR = join(process.env.HOME ?? "~", ".claude", "sessions");
 
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function getActiveSessions(): Promise<Map<string, ActiveSession>> {
   const map = new Map<string, ActiveSession>();
 
@@ -20,7 +29,7 @@ export async function getActiveSessions(): Promise<Map<string, ActiveSession>> {
       try {
         const raw = await readFile(join(SESSIONS_DIR, entry), "utf-8");
         const session = JSON.parse(raw) as ActiveSession;
-        if (session.sessionId) {
+        if (session.sessionId && isProcessAlive(session.pid)) {
           map.set(session.sessionId, session);
         }
       } catch {

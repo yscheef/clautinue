@@ -6,6 +6,7 @@ const BOLD = "\x1b[1m";
 const GREEN = "\x1b[32m";
 const CYAN = "\x1b[36m";
 const YELLOW = "\x1b[33m";
+const MAGENTA = "\x1b[35m";
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -44,7 +45,12 @@ function pad(s: string, len: number): string {
 }
 
 export function formatSessionRow(s: SessionMeta): string {
-  const active = s.isActive ? `${GREEN}●${RESET} ` : "  ";
+  const isDesktop = s.entrypoint === "claude-desktop";
+  const indicator = s.isActive
+    ? `${GREEN}●${RESET} `
+    : isDesktop
+      ? `${MAGENTA}◆${RESET} `
+      : "  ";
   const project = `${BOLD}${pad(s.projectName, 24)}${RESET}`;
   const label = pad(s.name ?? s.slug ?? s.sessionId.slice(0, 8), 36);
   const time = `${CYAN}${pad(relativeTime(s.lastTimestamp), 9)}${RESET}`;
@@ -52,7 +58,7 @@ export function formatSessionRow(s: SessionMeta): string {
   const msgs = `${pad(String(s.messageCount), 4)} msgs`;
   const tokens = `${YELLOW}${pad(formatTokens(s.totalInputTokens + s.totalOutputTokens), 6)}${RESET} tok`;
 
-  return `${active}${project} ${label} ${time} ${dur} ${msgs}  ${tokens}`;
+  return `${indicator}${project} ${label} ${time} ${dur} ${msgs}  ${tokens}`;
 }
 
 export function formatSessionDescription(s: SessionMeta): string {
@@ -60,7 +66,8 @@ export function formatSessionDescription(s: SessionMeta): string {
   const preview = cleaned
     ? `${DIM}"${cleaned.slice(0, 80)}${cleaned.length > 80 ? "..." : ""}"${RESET}`
     : "";
+  const desktop = s.entrypoint === "claude-desktop" ? `${MAGENTA}desktop${RESET}` : "";
   const model = s.model ? `${DIM}${s.model}${RESET}` : "";
   const cwd = `${DIM}${s.cwd}${RESET}`;
-  return [cwd, model, preview].filter(Boolean).join("  ");
+  return [cwd, desktop, model, preview].filter(Boolean).join("  ");
 }
