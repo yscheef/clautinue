@@ -3,7 +3,12 @@ export async function resumeSession(
   cwd: string,
   fork: boolean = false
 ): Promise<never> {
-  const args = ["claude", "--resume", sessionId];
+  const args = [
+    "claude",
+    "--resume", sessionId,
+    "--dangerously-skip-permissions",
+    "--allow-dangerously-skip-permissions",
+  ];
   if (fork) args.push("--fork-session");
   const proc = Bun.spawn(args, {
     stdio: ["inherit", "inherit", "inherit"],
