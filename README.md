@@ -4,8 +4,6 @@ Browse and resume [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 
 
 Claude Code ties sessions to the directory where they started — to continue one, you have to `cd` there first. **clautinue** gives you a single searchable picker across all your projects.
 
-![demo](https://github.com/user-attachments/assets/placeholder)
-
 ## Features
 
 - Lists all Claude Code sessions across every project
@@ -13,22 +11,48 @@ Claude Code ties sessions to the directory where they started — to continue on
 - Stats at a glance: duration, message count, total tokens
 - Type to search by project name, session name, first message, or path
 - Selecting a session drops you straight into `claude --resume`
-- Active session protection: prompts to fork instead of conflicting
-- Fast: parses session files efficiently and caches metadata
+- Active session protection: take over, fork, or fork + git worktree
+- Responsive layout adapts to terminal width
+- Fast: caches parsed metadata for instant subsequent launches
 
 ## Install
 
-Requires [Bun](https://bun.sh).
+### Homebrew (macOS / Linux)
 
 ```bash
-# Clone and link
+brew install yscheef/tap/clautinue
+```
+
+### Download binary
+
+Grab the latest release for your platform:
+
+```bash
+# macOS (Apple Silicon)
+curl -fsSL https://github.com/yscheef/clautinue/releases/latest/download/clautinue-darwin-arm64.tar.gz | tar xz
+sudo mv clautinue-darwin-arm64 /usr/local/bin/clautinue
+
+# macOS (Intel)
+curl -fsSL https://github.com/yscheef/clautinue/releases/latest/download/clautinue-darwin-x64.tar.gz | tar xz
+sudo mv clautinue-darwin-x64 /usr/local/bin/clautinue
+
+# Linux (x64)
+curl -fsSL https://github.com/yscheef/clautinue/releases/latest/download/clautinue-linux-x64.tar.gz | tar xz
+sudo mv clautinue-linux-x64 /usr/local/bin/clautinue
+
+# Linux (ARM64)
+curl -fsSL https://github.com/yscheef/clautinue/releases/latest/download/clautinue-linux-arm64.tar.gz | tar xz
+sudo mv clautinue-linux-arm64 /usr/local/bin/clautinue
+```
+
+### From source (requires [Bun](https://bun.sh))
+
+```bash
 git clone https://github.com/yscheef/clautinue.git
 cd clautinue
 bun install
 bun link
 ```
-
-`clautinue` is now available globally.
 
 ## Usage
 
@@ -58,16 +82,33 @@ clautinue --no-cache
 ```
 
 - Green `●` = active session (running in another terminal)
+- Magenta `◆` = desktop app session
 - Project name, session name or slug, last activity, duration, messages, tokens
 - Description line shows: working directory, model, and a preview of the first message
 
+### Keyboard shortcuts
+
+| Key | Action |
+|-----|--------|
+| Type | Filter sessions by name, project, path, or first message |
+| `Enter` | Resume selected session |
+| `Escape` | Quit |
+| `q` | Quit (in action menu only) |
+| `↑` `↓` | Navigate |
+
 ### Active sessions
 
-When you select an active session, clautinue warns you and offers to **fork** it — creating a new branch of the conversation without affecting the running instance.
+When you select an active session, you get three options:
+
+- **Take over** — resume here, the other terminal loses the session
+- **Fork** — branch off a new conversation from the current state
+- **Fork + Worktree** — fork conversation + create a git worktree for isolated code changes
 
 ## How it works
 
 clautinue reads Claude Code's session data from `~/.claude/projects/` and `~/.claude/sessions/`. It parses the JSONL conversation files to extract metadata (timestamps, token usage, message counts) and caches the results at `~/.cache/clautinue/sessions.json` for fast subsequent launches.
+
+Active sessions are verified by checking if their PID is still running, so stale session files are automatically filtered out.
 
 ## License
 
