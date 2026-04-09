@@ -8,6 +8,7 @@ import { loadCache, saveCache, isCacheHit } from "./cache.js";
 import { getActiveSessions } from "./active.js";
 import { formatSessionRow, formatSessionDescription } from "./display.js";
 import { resumeSession } from "./resume.js";
+import { createWorktree } from "./worktree.js";
 import type { SessionMeta, CacheData } from "./types.js";
 
 const args = process.argv.slice(2);
@@ -138,6 +139,11 @@ async function main() {
             description: `${DIM}Branch off a new conversation from the current state${RESET}`,
           },
           {
+            name: "Fork + Worktree",
+            value: "fork-worktree" as const,
+            description: `${DIM}Fork conversation + create a git worktree for isolated code${RESET}`,
+          },
+          {
             name: "Cancel",
             value: "cancel" as const,
           },
@@ -145,7 +151,13 @@ async function main() {
       });
 
       if (action === "cancel") process.exit(0);
-      await resumeSession(sessionId, selected.cwd, action === "fork");
+
+      if (action === "fork-worktree") {
+        const worktreePath = createWorktree(selected.cwd);
+        await resumeSession(sessionId, worktreePath ?? selected.cwd, true);
+      } else {
+        await resumeSession(sessionId, selected.cwd, action === "fork");
+      }
     } else {
       await resumeSession(sessionId, selected.cwd);
     }
