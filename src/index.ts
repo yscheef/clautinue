@@ -95,6 +95,9 @@ async function main() {
     description: formatSessionDescription(s),
   }));
 
+  // Escape / q exits cleanly from the select prompt (not search, where q is a valid keystroke)
+  const ac = new AbortController();
+
   try {
     const sessionId = await search<string>({
       message: `Sessions (${sessions.length})`,
@@ -125,6 +128,14 @@ async function main() {
         `\n${YELLOW}This session is active in another terminal.${RESET}`
       );
 
+      // Enable escape/q to quit on the select prompt
+      const onKeypress = (_ch: string, key: { name?: string; sequence?: string }) => {
+        if (key?.name === "escape" || key?.name === "q") {
+          ac.abort();
+        }
+      };
+      process.stdin.on("keypress", onKeypress);
+
       const action = await select({
         message: "What do you want to do?",
         choices: [
@@ -148,7 +159,9 @@ async function main() {
             value: "cancel" as const,
           },
         ],
-      });
+      }, { signal: ac.signal });
+
+      process.stdin.removeListener("keypress", onKeypress);
 
       if (action === "cancel") process.exit(0);
 
