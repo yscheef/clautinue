@@ -68,6 +68,27 @@ async function loadSessions(): Promise<SessionMeta[]> {
   return sessions;
 }
 
+function buildChoices(sessions: SessionMeta[], filter?: string) {
+  const filtered = filter
+    ? sessions.filter((s) => {
+        const term = filter.toLowerCase();
+        return (
+          s.projectName.toLowerCase().includes(term) ||
+          (s.slug?.toLowerCase().includes(term) ?? false) ||
+          (s.name?.toLowerCase().includes(term) ?? false) ||
+          s.firstUserMessage.toLowerCase().includes(term) ||
+          s.cwd.toLowerCase().includes(term)
+        );
+      })
+    : sessions;
+
+  return filtered.map((s) => ({
+    name: formatSessionRow(s),
+    value: s.sessionId,
+    description: formatSessionDescription(s),
+  }));
+}
+
 async function main() {
   let sessions = await loadSessions();
 
@@ -89,107 +110,108 @@ async function main() {
     process.exit(0);
   }
 
-  // Build choices fresh each time so column widths adapt to terminal size
-  function buildChoices(filter?: string) {
-    const filtered = filter
-      ? sessions.filter((s) => {
-          const term = filter.toLowerCase();
-          return (
-            s.projectName.toLowerCase().includes(term) ||
-            (s.slug?.toLowerCase().includes(term) ?? false) ||
-            (s.name?.toLowerCase().includes(term) ?? false) ||
-            s.firstUserMessage.toLowerCase().includes(term) ||
-            s.cwd.toLowerCase().includes(term)
-          );
-        })
-      : sessions;
+  // Main prompt loop — restarts on terminal resize to reformat columns
+  let sessionId: string | undefined;
 
-    return filtered.map((s) => ({
-      name: formatSessionRow(s),
-      value: s.sessionId,
-      description: formatSessionDescription(s),
-    }));
+  while (!sessionId) {
+    const ac = new AbortController();
+    let resized = false;
+
+    // Abort and restart prompt on terminal resize
+    const onResize = () => {
+      resized = true;
+      ac.abort();
+    };
+    process.stdout.on("resize", onResize);
+
+    // Escape exits
+    const onData = (data: Buffer) => {
+      if (data.length === 1 && data[0] === 0x1b) {
+        ac.abort();
+      }
+    };
+    process.stdin.on("data", onData);
+
+    try {
+      sessionId = await search<string>({
+        message: `Sessions (${sessions.length})`,
+        source: (input: string | undefined) => buildChoices(sessions, input || undefined),
+        pageSize: 15,
+      }, { signal: ac.signal });
+    } catch {
+      if (resized) {
+        // Clear the aborted prompt output, loop back to show fresh one
+        process.stdout.write("\x1b[2K\x1b[1A\x1b[2K\r");
+        continue;
+      }
+      process.exit(0);
+    } finally {
+      process.stdout.removeListener("resize", onResize);
+      process.stdin.removeListener("data", onData);
+    }
   }
 
-  // Listen for Escape on raw stdin — works across all prompts
-  const searchAc = new AbortController();
-  const selectAc = new AbortController();
+  const selected = sessions.find((s) => s.sessionId === sessionId)!;
 
-  const onData = (data: Buffer) => {
-    if (data.length === 1 && data[0] === 0x1b) {
-      searchAc.abort();
-      selectAc.abort();
-    }
-  };
-  process.stdin.on("data", onData);
+  if (selected.isActive) {
+    const YELLOW = "\x1b[33m";
+    const DIM = "\x1b[2m";
+    const RESET = "\x1b[0m";
+    console.log(
+      `\n${YELLOW}This session is active in another terminal.${RESET}`
+    );
 
-  try {
-    const sessionId = await search<string>({
-      message: `Sessions (${sessions.length})`,
-      source: (input: string | undefined) => buildChoices(input || undefined),
-      pageSize: 15,
-    }, { signal: searchAc.signal });
+    const selectAc = new AbortController();
 
-    const selected = sessions.find((s) => s.sessionId === sessionId)!;
+    const onSelectData = (data: Buffer) => {
+      const ch = data.toString();
+      if (ch === "q") selectAc.abort();
+      if (data.length === 1 && data[0] === 0x1b) selectAc.abort();
+    };
+    process.stdin.on("data", onSelectData);
 
-    if (selected.isActive) {
-      const YELLOW = "\x1b[33m";
-      const DIM = "\x1b[2m";
-      const RESET = "\x1b[0m";
-      console.log(
-        `\n${YELLOW}This session is active in another terminal.${RESET}`
-      );
-
-      // Also allow q to quit on the select prompt (no text input there)
-      const onSelectData = (data: Buffer) => {
-        if (data.toString() === "q") {
-          selectAc.abort();
-        }
-      };
-      process.stdin.on("data", onSelectData);
-
-      const action = await select({
+    let action: string;
+    try {
+      action = await select({
         message: "What do you want to do?",
         choices: [
           {
             name: "Take over",
-            value: "takeover" as const,
+            value: "takeover",
             description: `${DIM}Resume the session here (the other terminal will lose it)${RESET}`,
           },
           {
             name: "Fork",
-            value: "fork" as const,
+            value: "fork",
             description: `${DIM}Branch off a new conversation from the current state${RESET}`,
           },
           {
             name: "Fork + Worktree",
-            value: "fork-worktree" as const,
+            value: "fork-worktree",
             description: `${DIM}Fork conversation + create a git worktree for isolated code${RESET}`,
           },
           {
             name: "Cancel",
-            value: "cancel" as const,
+            value: "cancel",
           },
         ],
       }, { signal: selectAc.signal });
-
+    } catch {
+      process.exit(0);
+    } finally {
       process.stdin.removeListener("data", onSelectData);
-
-      if (action === "cancel") process.exit(0);
-
-      if (action === "fork-worktree") {
-        const worktreePath = createWorktree(selected.cwd);
-        await resumeSession(sessionId, worktreePath ?? selected.cwd, true);
-      } else {
-        await resumeSession(sessionId, selected.cwd, action === "fork");
-      }
-    } else {
-      await resumeSession(sessionId, selected.cwd);
     }
-  } catch {
-    process.exit(0);
-  } finally {
-    process.stdin.removeListener("data", onData);
+
+    if (action === "cancel") process.exit(0);
+
+    if (action === "fork-worktree") {
+      const worktreePath = createWorktree(selected.cwd);
+      await resumeSession(sessionId, worktreePath ?? selected.cwd, true);
+    } else {
+      await resumeSession(sessionId, selected.cwd, action === "fork");
+    }
+  } else {
+    await resumeSession(sessionId, selected.cwd);
   }
 }
 
