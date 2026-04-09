@@ -95,8 +95,18 @@ async function main() {
     description: formatSessionDescription(s),
   }));
 
-  // Escape / q exits cleanly from the select prompt (not search, where q is a valid keystroke)
-  const ac = new AbortController();
+  // Listen for Escape on raw stdin — works across all prompts
+  const searchAc = new AbortController();
+  const selectAc = new AbortController();
+
+  const onData = (data: Buffer) => {
+    // Escape key is \x1b (27) sent alone (not as part of an arrow key sequence)
+    if (data.length === 1 && data[0] === 0x1b) {
+      searchAc.abort();
+      selectAc.abort();
+    }
+  };
+  process.stdin.on("data", onData);
 
   try {
     const sessionId = await search<string>({
@@ -116,7 +126,7 @@ async function main() {
         });
       },
       pageSize: 15,
-    });
+    }, { signal: searchAc.signal });
 
     const selected = sessions.find((s) => s.sessionId === sessionId)!;
 
@@ -128,13 +138,13 @@ async function main() {
         `\n${YELLOW}This session is active in another terminal.${RESET}`
       );
 
-      // Enable escape/q to quit on the select prompt
-      const onKeypress = (_ch: string, key: { name?: string; sequence?: string }) => {
-        if (key?.name === "escape" || key?.name === "q") {
-          ac.abort();
+      // Also allow q to quit on the select prompt (no text input there)
+      const onSelectData = (data: Buffer) => {
+        if (data.toString() === "q") {
+          selectAc.abort();
         }
       };
-      process.stdin.on("keypress", onKeypress);
+      process.stdin.on("data", onSelectData);
 
       const action = await select({
         message: "What do you want to do?",
@@ -159,9 +169,9 @@ async function main() {
             value: "cancel" as const,
           },
         ],
-      }, { signal: ac.signal });
+      }, { signal: selectAc.signal });
 
-      process.stdin.removeListener("keypress", onKeypress);
+      process.stdin.removeListener("data", onSelectData);
 
       if (action === "cancel") process.exit(0);
 
@@ -176,6 +186,8 @@ async function main() {
     }
   } catch {
     process.exit(0);
+  } finally {
+    process.stdin.removeListener("data", onData);
   }
 }
 
