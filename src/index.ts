@@ -89,18 +89,33 @@ async function main() {
     process.exit(0);
   }
 
-  const choices = sessions.map((s) => ({
-    name: formatSessionRow(s),
-    value: s.sessionId,
-    description: formatSessionDescription(s),
-  }));
+  // Build choices fresh each time so column widths adapt to terminal size
+  function buildChoices(filter?: string) {
+    const filtered = filter
+      ? sessions.filter((s) => {
+          const term = filter.toLowerCase();
+          return (
+            s.projectName.toLowerCase().includes(term) ||
+            (s.slug?.toLowerCase().includes(term) ?? false) ||
+            (s.name?.toLowerCase().includes(term) ?? false) ||
+            s.firstUserMessage.toLowerCase().includes(term) ||
+            s.cwd.toLowerCase().includes(term)
+          );
+        })
+      : sessions;
+
+    return filtered.map((s) => ({
+      name: formatSessionRow(s),
+      value: s.sessionId,
+      description: formatSessionDescription(s),
+    }));
+  }
 
   // Listen for Escape on raw stdin — works across all prompts
   const searchAc = new AbortController();
   const selectAc = new AbortController();
 
   const onData = (data: Buffer) => {
-    // Escape key is \x1b (27) sent alone (not as part of an arrow key sequence)
     if (data.length === 1 && data[0] === 0x1b) {
       searchAc.abort();
       selectAc.abort();
@@ -111,20 +126,7 @@ async function main() {
   try {
     const sessionId = await search<string>({
       message: `Sessions (${sessions.length})`,
-      source: (input: string | undefined) => {
-        if (!input) return choices;
-        const term = input.toLowerCase();
-        return choices.filter((c) => {
-          const s = sessions.find((s) => s.sessionId === c.value)!;
-          return (
-            s.projectName.toLowerCase().includes(term) ||
-            (s.slug?.toLowerCase().includes(term) ?? false) ||
-            (s.name?.toLowerCase().includes(term) ?? false) ||
-            s.firstUserMessage.toLowerCase().includes(term) ||
-            s.cwd.toLowerCase().includes(term)
-          );
-        });
-      },
+      source: (input: string | undefined) => buildChoices(input || undefined),
       pageSize: 15,
     }, { signal: searchAc.signal });
 
