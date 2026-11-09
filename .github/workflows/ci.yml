@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Type-check
+        run: bun run check
+
+      - name: Test (compiled binary, same check as the Homebrew formula)
+        run: bun run test
+
+      - name: Format check (prettier)
+        run: bunx prettier --check .
+
+      - name: Lint (eslint)
+        run: bunx eslint .
