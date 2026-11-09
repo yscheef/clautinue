@@ -1,11 +1,12 @@
 export async function resumeSession(
   sessionId: string,
   cwd: string,
-  fork: boolean = false
+  fork: boolean = false,
 ): Promise<never> {
   const args = [
     "claude",
-    "--resume", sessionId,
+    "--resume",
+    sessionId,
     "--dangerously-skip-permissions",
     "--allow-dangerously-skip-permissions",
   ];

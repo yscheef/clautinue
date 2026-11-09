@@ -43,7 +43,8 @@ function extractFromHead(records: unknown[]): {
       if (!cwd && r.cwd) cwd = r.cwd as string;
       if (!slug && r.slug) slug = r.slug as string;
       if (!entrypoint && r.entrypoint) entrypoint = r.entrypoint as string;
-      if (!firstTimestamp && r.timestamp) firstTimestamp = r.timestamp as string;
+      if (!firstTimestamp && r.timestamp)
+        firstTimestamp = r.timestamp as string;
 
       if (!firstUserMessage) {
         const msg = r.message as Record<string, unknown> | undefined;
@@ -53,7 +54,7 @@ function extractFromHead(records: unknown[]): {
             firstUserMessage = content.slice(0, 120);
           } else if (Array.isArray(content)) {
             const textBlock = content.find(
-              (b: unknown) => (b as Record<string, unknown>).type === "text"
+              (b: unknown) => (b as Record<string, unknown>).type === "text",
             ) as Record<string, unknown> | undefined;
             if (textBlock?.text) {
               firstUserMessage = (textBlock.text as string).slice(0, 120);
@@ -99,7 +100,7 @@ function extractFromTail(records: unknown[]): {
 }
 
 export async function parseSessionQuick(
-  file: ScannedFile
+  file: ScannedFile,
 ): Promise<SessionMeta | null> {
   const bunFile = Bun.file(file.filePath);
   const fileSize = bunFile.size;
@@ -125,7 +126,7 @@ export async function parseSessionQuick(
   const tail = extractFromTail(tailRecords);
 
   const cwd = head.cwd ?? "";
-  const projectName = cwd ? cwd.split("/").filter(Boolean).pop() ?? "" : "";
+  const projectName = cwd ? (cwd.split("/").filter(Boolean).pop() ?? "") : "";
 
   return {
     sessionId: head.sessionId,
@@ -149,7 +150,7 @@ export async function parseSessionQuick(
 }
 
 export async function parseSessionFull(
-  file: ScannedFile
+  file: ScannedFile,
 ): Promise<SessionMeta | null> {
   const bunFile = Bun.file(file.filePath);
   const text = await bunFile.text();
@@ -183,7 +184,7 @@ export async function parseSessionFull(
   }
 
   const cwd = head.cwd ?? "";
-  const projectName = cwd ? cwd.split("/").filter(Boolean).pop() ?? "" : "";
+  const projectName = cwd ? (cwd.split("/").filter(Boolean).pop() ?? "") : "";
 
   return {
     sessionId: head.sessionId,

@@ -36,7 +36,7 @@ export function createWorktree(cwd: string): string | null {
     {
       cwd,
       stdio: ["pipe", "pipe", "pipe"],
-    }
+    },
   );
 
   if (result.exitCode !== 0) {
@@ -45,11 +45,9 @@ export function createWorktree(cwd: string): string | null {
     return null;
   }
 
+  console.log(`${GREEN}Worktree created:${RESET} ${worktreePath}`);
   console.log(
-    `${GREEN}Worktree created:${RESET} ${worktreePath}`
-  );
-  console.log(
-    `${DIM}Branch: ${worktreeBranch} (from ${branch ?? "HEAD"})${RESET}\n`
+    `${DIM}Branch: ${worktreeBranch} (from ${branch ?? "HEAD"})${RESET}\n`,
   );
 
   return worktreePath;

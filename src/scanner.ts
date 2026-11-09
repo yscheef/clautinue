@@ -5,7 +5,8 @@ import type { ScannedFile } from "./types.js";
 const CLAUDE_DIR = join(process.env.HOME ?? "~", ".claude");
 const PROJECTS_DIR = join(CLAUDE_DIR, "projects");
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jsonl$/;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jsonl$/;
 
 export async function scanSessionFiles(): Promise<ScannedFile[]> {
   const results: ScannedFile[] = [];
