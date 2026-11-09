@@ -7,7 +7,7 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "bun build src/index.ts --compile --outfile dist/clautinue && dist/clautinue --project __nonexistent__ 2>&1 | grep -q 'No sessions found'",
+    "test": "bun build src/index.ts --compile --outfile dist/clautinue && HOME=$(mktemp -d) dist/clautinue --project __nonexistent__ 2>&1 | grep -q 'No sessions found'",
     "format": "prettier --write .",
     "lint": "prettier --check . && eslint ."
   },
