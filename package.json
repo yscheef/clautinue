@@ -5,8 +5,18 @@
   "bin": {
     "clautinue": "./src/index.ts"
   },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "bun build src/index.ts --compile --outfile dist/clautinue && HOME=$(mktemp -d) dist/clautinue --project __nonexistent__ 2>&1 | grep -q 'No sessions found'",
+    "format": "prettier --write .",
+    "lint": "prettier --check . && eslint ."
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@eslint/js": "^9.39.5",
+    "@types/bun": "latest",
+    "eslint": "^9.39.5",
+    "prettier": "^3.9.10",
+    "typescript-eslint": "^8.72.1"
   },
   "peerDependencies": {
     "typescript": "^5"

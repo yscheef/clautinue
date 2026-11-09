@@ -17,7 +17,8 @@ const activeOnly = args.includes("--active");
 const limitIdx = args.indexOf("--limit");
 const limit = limitIdx !== -1 ? parseInt(args[limitIdx + 1] ?? "100", 10) : 100;
 const projectIdx = args.indexOf("--project");
-const projectFilter = projectIdx !== -1 ? (args[projectIdx + 1] ?? "").toLowerCase() : null;
+const projectFilter =
+  projectIdx !== -1 ? (args[projectIdx + 1] ?? "").toLowerCase() : null;
 
 async function loadSessions(): Promise<SessionMeta[]> {
   const emptyCache: CacheData = { version: 1, sessions: {} };
@@ -31,7 +32,9 @@ async function loadSessions(): Promise<SessionMeta[]> {
   const toSave: CacheData = { ...cache, sessions: { ...cache.sessions } };
 
   const parsePromises = files.slice(0, 500).map(async (file) => {
-    const cached = noCache ? null : isCacheHit(cache, file.filePath, file.mtime, file.size);
+    const cached = noCache
+      ? null
+      : isCacheHit(cache, file.filePath, file.mtime, file.size);
     let session: SessionMeta | null;
 
     if (cached) {
@@ -62,7 +65,9 @@ async function loadSessions(): Promise<SessionMeta[]> {
 
   sessions.sort((a, b) => {
     if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
-    return new Date(b.lastTimestamp).getTime() - new Date(a.lastTimestamp).getTime();
+    return (
+      new Date(b.lastTimestamp).getTime() - new Date(a.lastTimestamp).getTime()
+    );
   });
 
   return sessions;
@@ -93,9 +98,10 @@ async function main() {
   let sessions = await loadSessions();
 
   if (projectFilter) {
-    sessions = sessions.filter((s) =>
-      s.projectName.toLowerCase().includes(projectFilter) ||
-      (s.name?.toLowerCase().includes(projectFilter) ?? false)
+    sessions = sessions.filter(
+      (s) =>
+        s.projectName.toLowerCase().includes(projectFilter) ||
+        (s.name?.toLowerCase().includes(projectFilter) ?? false),
     );
   }
 
@@ -133,11 +139,15 @@ async function main() {
     process.stdin.on("data", onData);
 
     try {
-      sessionId = await search<string>({
-        message: `Sessions (${sessions.length})`,
-        source: (input: string | undefined) => buildChoices(sessions, input || undefined),
-        pageSize: 15,
-      }, { signal: ac.signal });
+      sessionId = await search<string>(
+        {
+          message: `Sessions (${sessions.length})`,
+          source: (input: string | undefined) =>
+            buildChoices(sessions, input || undefined),
+          pageSize: 15,
+        },
+        { signal: ac.signal },
+      );
     } catch {
       if (resized) {
         // Clear the aborted prompt output, loop back to show fresh one
@@ -158,7 +168,7 @@ async function main() {
     const DIM = "\x1b[2m";
     const RESET = "\x1b[0m";
     console.log(
-      `\n${YELLOW}This session is active in another terminal.${RESET}`
+      `\n${YELLOW}This session is active in another terminal.${RESET}`,
     );
 
     const selectAc = new AbortController();
@@ -172,30 +182,33 @@ async function main() {
 
     let action: string;
     try {
-      action = await select({
-        message: "What do you want to do?",
-        choices: [
-          {
-            name: "Take over",
-            value: "takeover",
-            description: `${DIM}Resume the session here (the other terminal will lose it)${RESET}`,
-          },
-          {
-            name: "Fork",
-            value: "fork",
-            description: `${DIM}Branch off a new conversation from the current state${RESET}`,
-          },
-          {
-            name: "Fork + Worktree",
-            value: "fork-worktree",
-            description: `${DIM}Fork conversation + create a git worktree for isolated code${RESET}`,
-          },
-          {
-            name: "Cancel",
-            value: "cancel",
-          },
-        ],
-      }, { signal: selectAc.signal });
+      action = await select(
+        {
+          message: "What do you want to do?",
+          choices: [
+            {
+              name: "Take over",
+              value: "takeover",
+              description: `${DIM}Resume the session here (the other terminal will lose it)${RESET}`,
+            },
+            {
+              name: "Fork",
+              value: "fork",
+              description: `${DIM}Branch off a new conversation from the current state${RESET}`,
+            },
+            {
+              name: "Fork + Worktree",
+              value: "fork-worktree",
+              description: `${DIM}Fork conversation + create a git worktree for isolated code${RESET}`,
+            },
+            {
+              name: "Cancel",
+              value: "cancel",
+            },
+          ],
+        },
+        { signal: selectAc.signal },
+      );
     } catch {
       process.exit(0);
     } finally {

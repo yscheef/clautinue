@@ -7,7 +7,7 @@ const CACHE_PATH = join(
   process.env.HOME ?? "~",
   ".cache",
   "clautinue",
-  "sessions.json"
+  "sessions.json",
 );
 
 export async function loadCache(): Promise<CacheData> {
@@ -34,7 +34,7 @@ export function isCacheHit(
   cache: CacheData,
   filePath: string,
   mtime: number,
-  size: number
+  size: number,
 ): SessionMeta | null {
   const entry = cache.sessions[filePath];
   if (!entry) return null;

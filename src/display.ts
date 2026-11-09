@@ -105,7 +105,8 @@ export function formatSessionDescription(s: SessionMeta): string {
   const preview = cleaned
     ? `${DIM}"${cleaned.slice(0, previewLen)}${cleaned.length > previewLen ? "..." : ""}"${RESET}`
     : "";
-  const desktop = s.entrypoint === "claude-desktop" ? `${MAGENTA}desktop${RESET}` : "";
+  const desktop =
+    s.entrypoint === "claude-desktop" ? `${MAGENTA}desktop${RESET}` : "";
   const model = s.model ? `${DIM}${s.model}${RESET}` : "";
   const cwd = `${DIM}${s.cwd}${RESET}`;
 

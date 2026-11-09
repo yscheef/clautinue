@@ -88,13 +88,13 @@ clautinue --no-cache
 
 ### Keyboard shortcuts
 
-| Key | Action |
-|-----|--------|
-| Type | Filter sessions by name, project, path, or first message |
-| `Enter` | Resume selected session |
-| `Escape` | Quit |
-| `q` | Quit (in action menu only) |
-| `↑` `↓` | Navigate |
+| Key      | Action                                                   |
+| -------- | -------------------------------------------------------- |
+| Type     | Filter sessions by name, project, path, or first message |
+| `Enter`  | Resume selected session                                  |
+| `Escape` | Quit                                                     |
+| `q`      | Quit (in action menu only)                               |
+| `↑` `↓`  | Navigate                                                 |
 
 ### Active sessions
 
